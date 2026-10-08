@@ -162,6 +162,7 @@ export const checkoutPractice: EngineModule<CheckoutConfig, CheckoutState> = {
     return {
       target: tgt,
       headline: done ? 'Fertig' : `${s.remaining}`,
+      headlineLabel: 'Rest',
       caption: done ? undefined : s.remaining !== s.target ? `Checkout ${s.target} · Rest ${s.remaining}` : `Checke ${s.target} mit max. ${c.dartsPerAttempt} Darts`,
       progress: s.attempts.length / c.attempts,
       stats,

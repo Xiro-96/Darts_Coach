@@ -89,6 +89,7 @@ export const x01Drill: EngineModule<X01DrillConfig, X01DrillState> = {
     return {
       target: curIsBot ? null : doubleTarget(cur.remaining),
       headline: g.finished ? (g.winner === 0 ? 'Gewonnen!' : 'Verloren') : `${me.remaining}`,
+      headlineLabel: 'Rest',
       caption: g.finished ? undefined : curIsBot ? `${g.config.players[g.current].name} ist am Zug …` : `Leg ${g.leg + 1} · Rest`,
       progress: 1 - me.remaining / g.config.start,
       stats: [

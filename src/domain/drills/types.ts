@@ -50,6 +50,8 @@ export interface DrillView {
   target: Target | null;
   /** Große Zielanzeige, z. B. "20", "D16", "57". */
   headline: string;
+  /** Beschriftung über der Zielanzeige (Standard: "Ziel"). */
+  headlineLabel?: string;
   /** Unterzeile, z. B. "Ziel 5 von 21". */
   caption?: string;
   progress: number;

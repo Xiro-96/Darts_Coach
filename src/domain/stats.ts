@@ -453,3 +453,52 @@ export function visitScoreSpread(sessions: SessionRecord[]): { sd: number | null
   return { sd: stdDev(scores), visits: scores.length };
 }
 
+
+export interface BucketPoint {
+  start: number;
+  label: string;
+  target: Rate;
+  darts: number;
+  groupMm: number | null;
+  groupRounds: number;
+  zeroShare: number | null;
+  visits: number;
+}
+
+/** Werte je Tag oder Woche für einen Zeitraum (für Diagramme). */
+export function bucketTrend(sessions: SessionRecord[], bucket: 'day' | 'week', count: number, now = Date.now()): BucketPoint[] {
+  if (bucket === 'week') {
+    return weeklyTrend(sessions, count, now).map((w) => ({
+      start: w.weekStart,
+      label: w.label,
+      target: w.target,
+      darts: w.darts,
+      groupMm: w.groupMm,
+      groupRounds: w.groupRounds,
+      zeroShare: w.zeroVisitShare,
+      visits: w.visits,
+    }));
+  }
+  const out: BucketPoint[] = [];
+  const today = startOfDay(now);
+  for (let i = count - 1; i >= 0; i--) {
+    const ds = startOfDay(today - i * DAY_MS + DAY_MS / 2);
+    const de = startOfDay(ds + DAY_MS * 1.5);
+    const inDay = sessions.filter((s) => s.startedAt >= ds && s.startedAt < de);
+    const throws = allThrows(inDay).filter(hasTarget);
+    const groups = groupSizesFrom(inDay);
+    const zero = zeroVisits(inDay);
+    const d = new Date(ds);
+    out.push({
+      start: ds,
+      label: `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.`,
+      target: rate(throws.filter((t) => t.hit).length, throws.length),
+      darts: inDay.reduce((a, s) => a + sessionDarts(s), 0),
+      groupMm: mean(groups.map((g) => g.mm)),
+      groupRounds: groups.length,
+      zeroShare: zero.visits ? zero.zero / zero.visits : null,
+      visits: zero.visits,
+    });
+  }
+  return out;
+}
