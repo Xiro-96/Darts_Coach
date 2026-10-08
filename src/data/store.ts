@@ -19,6 +19,9 @@ interface AppState {
   /** Ergebnis der zuletzt abgeschlossenen Einheit (für die Auswertung). */
   lastSummary: SessionSummary | null;
   toast: { id: number; text: string; tone: 'good' | 'bad' | 'info' } | null;
+  /** Während einer Einheit gewählte Eingabeart (gilt bis zum Ende der Einheit). */
+  sessionInput: 'board' | 'buttons' | 'total' | null;
+  setSessionInput(m: 'board' | 'buttons' | 'total'): void;
 
   init(): Promise<void>;
   setProfile(p: Profile): Promise<void>;
@@ -47,6 +50,11 @@ export const useApp = create<AppState>((set, get) => ({
   active: null,
   lastSummary: null,
   toast: null,
+  sessionInput: null,
+
+  setSessionInput(m) {
+    set({ sessionInput: m });
+  },
 
   async init() {
     try {
@@ -80,7 +88,7 @@ export const useApp = create<AppState>((set, get) => ({
 
   startSession(a) {
     repo.saveActiveDraft(a);
-    set({ active: a });
+    set({ active: a, sessionInput: null });
   },
 
   setActive(fn) {

@@ -67,7 +67,14 @@ export default function App() {
   if (!profile) return <Onboarding />;
 
   const [section, sub, third] = route.parts;
-  if (section === 'session') return <SessionRunner />;
+  if (section === 'session') {
+    return (
+      <>
+        <SessionRunner />
+        <Toast />
+      </>
+    );
+  }
 
   let content: ReactNode;
   switch (section) {

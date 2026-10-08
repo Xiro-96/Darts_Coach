@@ -2,7 +2,7 @@ import { ChevronDown, ChevronUp, Flag, Lightbulb, Undo2 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useApp } from '../../data/store';
 import { findDrill } from '../../domain/drills/catalog';
-import { nextBotDart, runDrill } from '../../domain/drills/registry';
+import { nextBotDart, runDrill, validateEvent } from '../../domain/drills/registry';
 import type { DrillView, X01Panel } from '../../domain/drills/types';
 import type { X01DrillState } from '../../domain/drills/x01Drill';
 import { isFinishable } from '../../domain/checkout';
@@ -20,6 +20,8 @@ export function DrillPlay({ phase, onEndEarly }: { phase: SessionPhase; onEndEar
   const addEvent = useApp((s) => s.addEvent);
   const undo = useApp((s) => s.undo);
   const showToast = useApp((s) => s.showToast);
+  const sessionInput = useApp((s) => s.sessionInput);
+  const setSessionInput = useApp((s) => s.setSessionInput);
   const events = active.progress[active.phaseIdx].events;
   const run = useMemo(() => runDrill(phase.config, events), [phase.config, events]);
   const view = run.view;
@@ -52,6 +54,12 @@ export function DrillPlay({ phase, onEndEarly }: { phase: SessionPhase; onEndEar
 
   const x01 = phase.config.engine === 'x01' ? (run.state as X01DrillState) : null;
   const submitVisit = (score: number) => {
+    // Erst prüfen (z. B. unmögliche Punktzahl), dann ggf. Details erfragen
+    const invalid = validateEvent(phase.config, events, { t: 'visit', score, darts: 3 });
+    if (invalid && !/gecheckt|checkbar/.test(invalid)) {
+      showToast(invalid, 'bad');
+      return;
+    }
     if (x01) {
       const g = x01.game;
       const p = g.players[g.current];
@@ -139,6 +147,8 @@ export function DrillPlay({ phase, onEndEarly }: { phase: SessionPhase; onEndEar
             key={phase.id}
             view={view}
             defaultMode={profile.inputMode}
+            chosenMode={sessionInput}
+            onModeChange={setSessionInput}
             onDart={submitDart}
             onVisitTotal={view.allowVisitTotal ? submitVisit : undefined}
             markers={markers}

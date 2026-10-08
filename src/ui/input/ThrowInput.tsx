@@ -6,7 +6,7 @@ import type { Dart, InputMode, Multiplier } from '../../domain/types';
 import { Dartboard } from '../board/Dartboard';
 import { cx } from '../components/ui';
 
-type Mode = InputMode | 'total';
+export type Mode = InputMode | 'total';
 
 /**
  * Treffererfassung: Scheibe (mit Position), Tasten (schnell) oder Aufnahme-Summe.
@@ -15,6 +15,8 @@ type Mode = InputMode | 'total';
 export function ThrowInput({
   view,
   defaultMode,
+  chosenMode,
+  onModeChange,
   onDart,
   onVisitTotal,
   markers,
@@ -22,12 +24,20 @@ export function ThrowInput({
 }: {
   view: DrillView;
   defaultMode: InputMode;
+  /** Vom Spieler in dieser Einheit gewählte Eingabeart. */
+  chosenMode?: Mode | null;
+  onModeChange?: (m: Mode) => void;
   onDart: (d: Dart) => void;
   onVisitTotal?: (score: number) => void;
   markers?: { p: { x: number; y: number }; label: string }[];
   disabled?: boolean;
 }) {
-  const [mode, setMode] = useState<Mode>(view.preferBoard ? 'board' : defaultMode);
+  const [localMode, setLocalMode] = useState<Mode>(view.preferBoard ? 'board' : defaultMode);
+  const mode = chosenMode ?? localMode;
+  const setMode = (m: Mode) => {
+    setLocalMode(m);
+    onModeChange?.(m);
+  };
   const effective: Mode = mode === 'total' && !view.allowVisitTotal ? 'buttons' : mode;
 
   const tabs: { id: Mode; label: string; icon: ReactNode }[] = [
@@ -104,7 +114,7 @@ export function Keypad({ quick, onDart, disabled }: { quick: Dart[]; onDart: (d:
         </div>
       )}
       {quick.length > 0 && (
-        <button onClick={() => setFull((v) => !v)} className="text-sm font-semibold text-ink-3 hover:text-ink-2">
+        <button data-testid="toggle-keypad" onClick={() => setFull((v) => !v)} className="text-sm font-semibold text-ink-3 hover:text-ink-2">
           {full ? 'Alle Felder ausblenden' : 'Alle Felder anzeigen'}
         </button>
       )}
@@ -114,6 +124,7 @@ export function Keypad({ quick, onDart, disabled }: { quick: Dart[]; onDart: (d:
             {([1, 2, 3] as Multiplier[]).map((m) => (
               <button
                 key={m}
+                data-testid={`mult-${m}`}
                 onClick={() => setMult(m)}
                 aria-pressed={mult === m}
                 className={cx(
@@ -127,19 +138,19 @@ export function Keypad({ quick, onDart, disabled }: { quick: Dart[]; onDart: (d:
           </div>
           <div className="grid grid-cols-5 gap-1.5">
             {Array.from({ length: 20 }, (_, i) => i + 1).map((n) => (
-              <button key={n} disabled={disabled} onClick={() => tap(makeDart(n, mult))} className="num h-12 rounded-xl bg-surface-3 text-xl active:scale-95">
+              <button key={n} data-testid={`key-${n}`} disabled={disabled} onClick={() => tap(makeDart(n, mult))} className="num h-12 rounded-xl bg-surface-3 text-xl active:scale-95">
                 {n}
               </button>
             ))}
           </div>
           <div className="grid grid-cols-3 gap-1.5">
-            <button disabled={disabled || mult === 3} onClick={() => tap(makeDart(25, 1))} className="h-12 rounded-xl bg-[rgb(29_138_77/0.25)] font-bold text-good">
+            <button data-testid="key-25" disabled={disabled || mult === 3} onClick={() => tap(makeDart(25, 1))} className="h-12 rounded-xl bg-[rgb(29_138_77/0.25)] font-bold text-good">
               25
             </button>
-            <button disabled={disabled || mult === 3} onClick={() => tap(makeDart(25, 2))} className="h-12 rounded-xl bg-bad-soft font-bold text-bad">
+            <button data-testid="key-bull" disabled={disabled || mult === 3} onClick={() => tap(makeDart(25, 2))} className="h-12 rounded-xl bg-bad-soft font-bold text-bad">
               BULL
             </button>
-            <button disabled={disabled} onClick={() => tap(makeDart(0, 0))} className="h-12 rounded-xl bg-surface-2 font-bold text-ink-2">
+            <button data-testid="key-miss" disabled={disabled} onClick={() => tap(makeDart(0, 0))} className="h-12 rounded-xl bg-surface-2 font-bold text-ink-2">
               Miss
             </button>
           </div>
@@ -175,17 +186,17 @@ export function TotalPad({ onSubmit, disabled, max = 180 }: { onSubmit: (score: 
       </div>
       <div className="grid grid-cols-3 gap-1.5">
         {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((d) => (
-          <button key={d} onClick={() => push(d)} className="num h-14 rounded-xl bg-surface-3 text-2xl active:scale-95">
+          <button key={d} data-testid={`num-${d}`} onClick={() => push(d)} className="num h-14 rounded-xl bg-surface-3 text-2xl active:scale-95">
             {d}
           </button>
         ))}
         <button onClick={() => setVal((v) => v.slice(0, -1))} aria-label="Löschen" className="grid h-14 place-items-center rounded-xl bg-surface-2 text-ink-2">
           <Delete size={22} />
         </button>
-        <button onClick={() => push('0')} className="num h-14 rounded-xl bg-surface-3 text-2xl">
+        <button data-testid="num-0" onClick={() => push('0')} className="num h-14 rounded-xl bg-surface-3 text-2xl">
           0
         </button>
-        <button onClick={() => submit(num ?? 0)} disabled={disabled || invalid} className="h-14 rounded-xl bg-accent font-bold text-[#05170d] disabled:opacity-40">
+        <button data-testid="num-ok" onClick={() => submit(num ?? 0)} disabled={disabled || invalid} className="h-14 rounded-xl bg-accent font-bold text-[#05170d] disabled:opacity-40">
           OK
         </button>
       </div>
