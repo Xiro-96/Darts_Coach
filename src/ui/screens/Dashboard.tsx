@@ -211,7 +211,7 @@ export function Dashboard() {
         <Card className="p-5 text-sm text-ink-2">Noch keine Trainingsdaten. Nach deiner ersten Einheit siehst du hier Trainingstage, Darts und Trefferquote – ausschließlich aus deinen echten Würfen.</Card>
       ) : (
         <div className="grid grid-cols-3 gap-3">
-          <MiniStat icon={<CalendarDays size={16} />} label="Trainingstage" value={String(data.last30.trainingDays)} sub={formatDuration(data.last30.activeMs)} />
+          <MiniStat icon={<CalendarDays size={16} />} label="Tage" value={String(data.last30.trainingDays)} sub={formatDuration(data.last30.activeMs)} />
           <MiniStat icon={<Target size={16} />} label="Darts" value={data.last30.darts.toLocaleString('de-DE')} sub={`${data.last30.sessions} Einheiten`} />
           <MiniStat icon={<Gauge size={16} />} label="Zieltreffer" value={formatPct(data.last30.target.rate)} sub={data.last30.target.attempts ? `bei ${data.last30.target.attempts} Darts` : 'noch keine'} />
         </div>

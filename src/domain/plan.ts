@@ -5,7 +5,7 @@ import type { DrillConfig } from './drills/types';
 import type { Profile, ProgramId, SessionMinutes, SessionPhase, SessionRecord } from './models';
 import { createRng, hashString, pick } from './random';
 import { mean } from './statistics';
-import { allThrows, DAY_MS, groupSizesFrom, hasTarget } from './stats';
+import { allThrows, countsForHitRate, DAY_MS, groupSizesFrom } from './stats';
 import { getTechnique } from './technique';
 import type { Target } from './types';
 
@@ -199,7 +199,7 @@ function stageThrowRate(sessions: SessionRecord[], skill: 'singles' | 'doubles')
   let hits = 0;
   let n = 0;
   for (const t of allThrows(sessions)) {
-    if (!hasTarget(t)) continue;
+    if (!countsForHitRate(t)) continue;
     const k = t.target.kind;
     const isSkill = skill === 'doubles' ? k === 'double' || k === 'bullseye' : (k === 'number' || k === 'single') && t.target.n !== 25;
     if (!isSkill) continue;

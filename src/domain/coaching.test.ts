@@ -361,3 +361,18 @@ describe('Session-Lebenszyklus', () => {
     expect(finalizeSession(a, [], NOW).record.completed).toBe(false);
   });
 });
+
+describe('Gruppierungsübungen und Trefferquoten', () => {
+  it('Grouping-Würfe zählen nicht in die Zieltrefferquote, aber in die Heatmap', () => {
+    const grouping = session(
+      [drillRecord('grouping', { engine: 'grouping', targets: [{ n: 25, kind: 'bull' }], rounds: 1, measure: 'positions' }, ev([{ n: 20, m: 1, p: { x: 0, y: 50 } }, { n: 20, m: 1, p: { x: 3, y: 52 } }, { n: 20, m: 1, p: { x: -2, y: 48 } }]), days(1))],
+      days(1),
+    );
+    const singles = targetSession({ n: 20, kind: 'number' }, hitsOn(20, 10, 5), days(1));
+    const o = overview([grouping, singles]);
+    expect(o.target.attempts).toBe(10);
+    expect(o.target.hits).toBe(5);
+    expect(o.groupSize.rounds).toBe(1);
+    expect(segmentStats([grouping]).length).toBe(0);
+  });
+});

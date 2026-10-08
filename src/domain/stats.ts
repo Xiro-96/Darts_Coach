@@ -12,7 +12,11 @@ export interface ThrowWithContext extends ThrowRecord {
   sessionId: string;
   drillId: string;
   time: number;
+  engine?: string;
 }
+
+/** Übungen, in denen das Treffen des Ziels ausdrücklich zweitrangig ist (Gruppieren). */
+const HIT_NEUTRAL_ENGINES = new Set(['grouping', 'follow']);
 
 export function sessionsInLastDays(sessions: SessionRecord[], days: number | null, now = Date.now()): SessionRecord[] {
   if (days === null) return sessions;
@@ -24,7 +28,7 @@ export function allThrows(sessions: SessionRecord[]): ThrowWithContext[] {
   const out: ThrowWithContext[] = [];
   for (const s of sessions) {
     for (const d of s.drills) {
-      for (const t of d.throws) out.push({ ...t, sessionId: s.id, drillId: d.drillId, time: t.at ?? d.startedAt });
+      for (const t of d.throws) out.push({ ...t, sessionId: s.id, drillId: d.drillId, time: t.at ?? d.startedAt, engine: d.config.engine });
     }
   }
   return out;
@@ -33,6 +37,11 @@ export function allThrows(sessions: SessionRecord[]): ThrowWithContext[] {
 /** Hat der Wurf ein echtes, eindeutiges Ziel? */
 export function hasTarget<T extends ThrowRecord>(t: T): t is T & { target: Target; hit: boolean } {
   return t.target !== null && t.hit !== null && t.target.kind !== 'free' && t.target.kind !== 'board';
+}
+
+/** Zählt der Wurf für Trefferquoten? (Ziel vorhanden und keine reine Gruppierungsübung) */
+export function countsForHitRate(t: ThrowWithContext): t is ThrowWithContext & { target: Target; hit: boolean } {
+  return hasTarget(t) && !HIT_NEUTRAL_ENGINES.has(t.engine ?? '');
 }
 
 export function drillDarts(d: DrillRecord): number {
@@ -105,7 +114,7 @@ export interface Overview {
 }
 
 export function overview(sessions: SessionRecord[]): Overview {
-  const throws = allThrows(sessions).filter(hasTarget);
+  const throws = allThrows(sessions).filter(countsForHitRate);
   const hits = throws.filter((t) => t.hit).length;
   const dbl = throws.filter((t) => t.target.kind === 'double' || t.target.kind === 'bullseye');
   const tpl = throws.filter((t) => t.target.kind === 'triple');
@@ -187,7 +196,7 @@ export function targetKey(t: Target): string {
 export function segmentStats(sessions: SessionRecord[]): SegmentStat[] {
   const map = new Map<string, { target: Target; hits: number; attempts: number }>();
   for (const t of allThrows(sessions)) {
-    if (!hasTarget(t)) continue;
+    if (!countsForHitRate(t)) continue;
     const k = targetKey(t.target);
     const e = map.get(k) ?? { target: t.target, hits: 0, attempts: 0 };
     e.attempts++;
@@ -216,7 +225,7 @@ export interface MissDirection {
 export function missDirections(sessions: SessionRecord[]): MissDirection[] {
   const map = new Map<number, { left: number; right: number; misses: number }>();
   for (const t of allThrows(sessions)) {
-    if (!hasTarget(t) || t.hit || t.target.n < 1 || t.target.n > 20) continue;
+    if (!countsForHitRate(t) || t.hit || t.target.n < 1 || t.target.n > 20) continue;
     if (!['number', 'single', 'triple', 'double'].includes(t.target.kind)) continue;
     const [l, r] = neighbours(t.target.n);
     const e = map.get(t.target.n) ?? { left: 0, right: 0, misses: 0 };
@@ -278,7 +287,7 @@ export function weeklyTrend(sessions: SessionRecord[], weeks: number, now = Date
     const ws = startOfWeek(start + DAY_MS / 2);
     const we = startOfWeek(ws + 8 * DAY_MS);
     const inWeek = sessions.filter((s) => s.startedAt >= ws && s.startedAt < we);
-    const throws = allThrows(inWeek).filter(hasTarget);
+    const throws = allThrows(inWeek).filter(countsForHitRate);
     const dbl = throws.filter((t) => t.target.kind === 'double' || t.target.kind === 'bullseye');
     const groups = groupSizesFrom(inWeek);
     const zero = zeroVisits(inWeek);
@@ -485,7 +494,7 @@ export function bucketTrend(sessions: SessionRecord[], bucket: 'day' | 'week', c
     const ds = startOfDay(today - i * DAY_MS + DAY_MS / 2);
     const de = startOfDay(ds + DAY_MS * 1.5);
     const inDay = sessions.filter((s) => s.startedAt >= ds && s.startedAt < de);
-    const throws = allThrows(inDay).filter(hasTarget);
+    const throws = allThrows(inDay).filter(countsForHitRate);
     const groups = groupSizesFrom(inDay);
     const zero = zeroVisits(inDay);
     const d = new Date(ds);

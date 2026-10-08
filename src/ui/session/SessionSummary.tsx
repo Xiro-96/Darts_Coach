@@ -27,7 +27,7 @@ export function SessionSummary({ id }: { id: string }) {
   const fromStore = last?.record.id === id ? last : null;
   const pbs = fromStore ? fromStore.personalBests : record.drills.filter((d) => isPersonalBest(previous, d));
   const xp = fromStore?.xp ?? sessionXp(record, previous, pbs.length);
-  const throws = record.drills.flatMap((d) => d.throws).filter(hasTarget);
+  const throws = record.drills.filter((d) => d.config.engine !== 'grouping' && d.config.engine !== 'follow').flatMap((d) => d.throws).filter(hasTarget);
   const hit = rate(throws.filter((t) => t.hit).length, throws.length);
   const main = [...record.drills].reverse().find((d) => findDrill(d.drillId) && d.result.completed && d.config.engine !== 'free' && d.config.engine !== 'focus') ?? record.drills[record.drills.length - 1];
   const next = main && findDrill(main.drillId) ? nextDrillAfter([...previous, record], main) : null;
